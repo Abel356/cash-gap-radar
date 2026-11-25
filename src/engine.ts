@@ -148,3 +148,53 @@ function projectedInvoiceDate(
 function projectionForScenario(
   input: ForecastInput,
   recurring: RecurringItem[],
+  profiles: Record<string, CustomerProfile>,
+  scenario: Scenario,
+): ScenarioProjection {
+  const firstWeek = startOfWeek(input.today, { weekStartsOn: 1 })
+  const lastWeekEnd = endOfWeek(addDays(firstWeek, 12 * 7), { weekStartsOn: 1 })
+  const items: ProjectedItem[] = []
+
+  for (const item of recurring) {
+    let next = addDays(item.lastDate, item.cadenceDays)
+    while (isBefore(next, input.today)) next = addDays(next, item.cadenceDays)
+    while (!isAfter(next, lastWeekEnd)) {
+      items.push({
+        id: `${item.id}-${next.toISOString()}`,
+        date: next,
+        description: item.description,
+        amount: item.amount,
+        kind: 'recurring',
+        recurringId: item.id,
+      })
+      next = addDays(next, item.cadenceDays)
+    }
+  }
+
+  for (const invoice of input.invoices.filter((item) => !item.paidDate)) {
+    const date = projectedInvoiceDate(invoice, profiles[invoice.customer], scenario, input.today)
+    if (!isAfter(date, lastWeekEnd)) {
+      items.push({
+        id: `invoice-${invoice.id}-${scenario}`,
+        date,
+        description: `${invoice.customer} · ${invoice.invoiceNumber}`,
+        amount: invoice.amount,
+        kind: 'invoice',
+        invoiceId: invoice.id,
+      })
+    }
+  }
+
+  let balance = input.openingBalance
+  const weeks = Array.from({ length: 13 }, (_, index) => {
+    const weekStart = addDays(firstWeek, index * 7)
+    const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 })
+    const weekItems = items.filter((item) => isWithinInterval(item.date, { start: weekStart, end: weekEnd }))
+    const inflows = weekItems.filter((item) => item.amount > 0).reduce((sum, item) => sum + item.amount, 0)
+    const outflows = Math.abs(weekItems.filter((item) => item.amount < 0).reduce((sum, item) => sum + item.amount, 0))
+    balance += inflows - outflows
+    return { weekStart, weekEnd, inflows, outflows, endBalance: balance, items: weekItems }
+  })
+
+  const shortWeek = weeks.find((week) => week.endBalance < input.safetyBuffer)
+  return {
