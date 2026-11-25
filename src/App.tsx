@@ -248,3 +248,53 @@ function FileDrop({ title, subtitle, fileName, onFile }: { title: string; subtit
       <input ref={ref} type="file" accept=".csv,text/csv" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) onFile(file) }} />
       <span className="drop-icon"><Icon name={fileName ? 'check' : 'upload'} /></span>
       <strong>{fileName || title}</strong><span>{fileName ? 'Ready to map' : subtitle}</span><small>{fileName ? 'Choose a different file' : 'Drop CSV here or click to browse · 5 MB max'}</small>
+    </button>
+  )
+}
+
+function MappingSection({ title, headers, mapping, required, onChange }: { title: string; headers: string[]; mapping: BankMapping | InvoiceMapping; required: string[]; onChange: (key: string, value: string) => void }) {
+  return <div className="mapping-section"><h3>{title}</h3><div className="mapping-grid">{Object.entries(mapping).map(([key, value]) => <label key={key}><span>{labelFor(key)}{required.includes(key) && <b>Required</b>}</span><select value={value} onChange={(event) => onChange(key, event.target.value)}><option value="">Not mapped</option>{headers.map((header) => <option key={header} value={header}>{header}</option>)}</select></label>)}</div></div>
+}
+
+function labelFor(key: string) {
+  return key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase())
+}
+
+function PreviewTable({ rows, headers }: { rows: CsvRow[]; headers: string[] }) {
+  return <div className="preview-table-wrap"><table><thead><tr>{headers.slice(0, 6).map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.slice(0, 3).map((row, index) => <tr key={index}>{headers.slice(0, 6).map((header) => <td key={header}>{row[header]}</td>)}</tr>)}</tbody></table></div>
+}
+
+function SetupFlow({ session, onBack, onContinue }: { session: SessionData; onBack: () => void; onContinue: (opening: number, buffer: number) => void }) {
+  const largestPayroll = useMemo(() => Math.max(0, ...session.transactions.filter((transaction) => transaction.amount < 0 && /payroll|salary|adp|gusto|wages/i.test(transaction.description)).map((transaction) => Math.abs(transaction.amount))), [session])
+  const [opening, setOpening] = useState(session.openingBalance || 0)
+  const [buffer, setBuffer] = useState(session.safetyBuffer || largestPayroll || 5000)
+  return (
+    <FlowShell onBack={onBack} step="Step 2 of 2 · Set the line">
+      <div className="setup-card">
+        <div className="flow-heading"><span className="eyebrow">One last check</span><h1>Where does “too tight” start?</h1><p>Set the balance we should treat as your safety floor. You can change it later.</p></div>
+        {session.skippedRows?.length ? <div className="notice"><Icon name="warn" /> {session.skippedRows.length} invalid row{session.skippedRows.length === 1 ? ' was' : 's were'} skipped.</div> : null}
+        <div className="money-inputs">
+          <label><span>Current bank balance</span><div><b>$</b><input inputMode="decimal" value={opening} onChange={(event) => setOpening(Number(event.target.value))} /></div><small>{session.openingBalance ? 'Prefilled from your latest balance column' : 'Enter today’s available balance'}</small></label>
+          <label><span>Safety buffer</span><div><b>$</b><input inputMode="decimal" value={buffer} onChange={(event) => setBuffer(Number(event.target.value))} /></div><small>{largestPayroll ? `Suggested from your largest payroll-like payment (${CAD.format(largestPayroll)})` : 'A payroll, rent, or comfort-line amount'}</small></label>
+        </div>
+        <div className="setup-note"><Icon name="lock" /><div><strong>Only the preference is saved while this page is open.</strong><span>Your transactions and invoices are never stored.</span></div></div>
+        <button className="btn btn-primary btn-wide" disabled={opening < 0 || buffer < 0} onClick={() => onContinue(opening, buffer)}>Build my 13-week radar <Icon name="arrow" /></button>
+      </div>
+    </FlowShell>
+  )
+}
+
+function Radar({ session, scenario, today, onScenario, onReset, onEdit }: { session: SessionData; scenario: Scenario; today: Date; onScenario: (scenario: Scenario) => void; onReset: () => void; onEdit: () => void }) {
+  const [selectedFix, setSelectedFix] = useState<Fix | null>(null)
+  const [copied, setCopied] = useState(false)
+  const result = useMemo(() => forecastCash({ transactions: session.transactions, invoices: session.invoices, openingBalance: session.openingBalance, safetyBuffer: session.safetyBuffer, today }), [session, today])
+  const projection = result.scenarios[scenario]
+  const headline = buildHeadline(result, scenario, session.safetyBuffer)
+  const chartData = projection.weeks.map((week) => ({
+    date: format(week.weekStart, 'MMM d'),
+    fullDate: format(week.weekStart, 'MMM d, yyyy'),
+    inflows: week.inflows,
+    outflows: week.outflows,
+    balance: week.endBalance,
+    isShort: week.endBalance < session.safetyBuffer,
+  }))
