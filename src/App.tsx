@@ -298,3 +298,53 @@ function Radar({ session, scenario, today, onScenario, onReset, onEdit }: { sess
     balance: week.endBalance,
     isShort: week.endBalance < session.safetyBuffer,
   }))
+  const tightest = projection.weeks.reduce((lowest, week) => week.endBalance < lowest.endBalance ? week : lowest)
+  const invoiceForFix = selectedFix?.invoiceId ? session.invoices.find((invoice) => invoice.id === selectedFix.invoiceId) : undefined
+  const covered = result.fixes.reduce((sum, fix) => sum + fix.impact, 0)
+
+  const copyDraft = async () => {
+    if (!invoiceForFix) return
+    await navigator.clipboard.writeText(draftForInvoice(invoiceForFix, today))
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1800)
+  }
+
+  return (
+    <main className="radar-page">
+      <nav className="radar-nav"><button className="logo-button" onClick={onReset}><Logo /></button><div className="radar-nav-actions"><span className="privacy-pill"><Icon name="lock" size={14} /> Local session</span><button className="text-button" onClick={onEdit}>Edit inputs</button><button className="icon-button" onClick={() => window.print()} title="Print or save as PDF"><Icon name="download" /></button></div></nav>
+      <div className="radar-wrap">
+        <header className="radar-header"><div><div className="business-line"><span className="status-dot" /> {session.businessName} {session.isDemo && <b>Synthetic demo</b>}</div><h1>Your 13-week cash radar</h1><p>Updated from {session.transactions.length} transactions and {session.invoices.length} invoices.</p></div><ScenarioToggle value={scenario} onChange={onScenario} /></header>
+
+        {result.confidence === 'low' && <div className="confidence-banner"><Icon name="warn" /><div><strong>Some customer histories are thin.</strong><span>Portfolio-wide payment patterns fill the gaps. See assumptions for details.</span></div></div>}
+
+        <section className={`headline-card ${projection.shortfall ? 'shortfall' : 'healthy'}`}>
+          <div className="headline-main"><span className="headline-status"><Icon name={projection.shortfall ? 'warn' : 'check'} /> {projection.shortfall ? 'Action recommended' : 'No cash gap found'}</span><h2>{headline}</h2><p>{projection.shortfall ? <>The expected view says your balance crosses the safety line. <strong>{result.fixes.length ? `${result.fixes.length} practical move${result.fixes.length > 1 ? 's' : ''} can cover ${CAD.format(covered)}.` : 'Review the main drivers below.'}</strong></> : <>Your tightest week starts {format(tightest.weekStart, 'MMMM d')}, with {CAD.format(tightest.endBalance)} left.</>}</p></div>
+          <div className="headline-metrics"><div><span>Projected gap</span><strong>{projection.shortfall ? CAD.format(projection.shortfall.amount) : CAD.format(0)}</strong></div><div><span>Safety line</span><strong>{CAD.format(session.safetyBuffer)}</strong></div><div><span>Forecast confidence</span><strong className="confidence-value">{result.confidence === 'high' ? 'High' : 'Developing'}</strong></div></div>
+        </section>
+
+        <section className="chart-card">
+          <div className="section-heading"><div><span className="eyebrow">Week by week</span><h2>How your balance moves</h2><p>Bars show money in and out. The line is your week-ending balance.</p></div><div className="chart-legend"><span><i className="inflow" /> In</span><span><i className="outflow" /> Out</span><span><i className="balance" /> Balance</span></div></div>
+          <div className="chart-area" aria-hidden="true">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={chartData} margin={{ top: 16, right: 12, left: 4, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="#e7e3da" strokeDasharray="3 5" />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#6f776f', fontSize: 11 }} interval={0} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fill: '#6f776f', fontSize: 11 }} tickFormatter={(value) => `$${Math.round(value / 1000)}k`} width={44} />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend content={() => null} />
+                <ReferenceLine yAxisId="left" y={session.safetyBuffer} stroke="#b66b5b" strokeDasharray="5 5" label={{ value: 'Safety line', fill: '#96584c', fontSize: 11, position: 'insideTopRight' }} />
+                <Bar yAxisId="left" dataKey="inflows" fill="#9cc9b4" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                <Bar yAxisId="left" dataKey="outflows" fill="#d8cbbc" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                <Line yAxisId="left" type="monotone" dataKey="balance" stroke="#173f35" strokeWidth={3} dot={(props) => <BalanceDot {...props} />} activeDot={{ r: 5, fill: '#173f35' }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <details className="data-table"><summary>View accessible forecast table</summary><table><thead><tr><th>Week</th><th>Inflows</th><th>Outflows</th><th>Ending balance</th><th>Status</th></tr></thead><tbody>{projection.weeks.map((week) => <tr key={week.weekStart.toISOString()}><td>{format(week.weekStart, 'MMM d, yyyy')}</td><td>{CAD.format(week.inflows)}</td><td>{CAD.format(week.outflows)}</td><td>{CAD.format(week.endBalance)}</td><td>{week.endBalance < session.safetyBuffer ? 'Below safety line' : 'Above safety line'}</td></tr>)}</tbody></table></details>
+        </section>
+
+        <section className="actions-section">
+          <div className="section-heading"><div><span className="eyebrow">Smallest useful moves</span><h2>{result.fixes.length ? 'Ways to close the gap' : 'No fixes needed right now'}</h2><p>{result.fixes.length ? 'Ranked by dollars covered, effort, risk, and confidence.' : 'Keep an eye on the tightest week and revisit when invoices change.'}</p></div>{projection.shortfall && <div className="coverage-stat"><span>Potential coverage</span><strong>{CAD.format(covered)}</strong></div>}</div>
+          {result.fixes.length > 0 && <div className="fix-grid">{result.fixes.map((fix, index) => <FixCard key={fix.id} fix={fix} index={index} onOpen={() => setSelectedFix(fix)} />)}</div>}
+        </section>
+
+        <section className="lower-grid">
