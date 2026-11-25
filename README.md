@@ -19,21 +19,271 @@ Cash Gap Radar tells a small-business owner when cash is likely to get tight and
 
 All transaction parsing and forecast math run locally. There is no account, database, bank connection, or file upload.
 
-## Run locally
+## Build and run from start to finish
+
+These instructions start with an empty terminal and end with a tested production build running locally.
+
+### 1. Install the prerequisites
+
+Install the following tools before cloning the project:
+
+- [Git](https://git-scm.com/downloads)
+- [Node.js](https://nodejs.org/) `20.19.0` or newer (`22.12.0+` is recommended)
+- A current browser such as Chrome, Edge, Firefox, or Safari
+
+Open PowerShell, Terminal, or your preferred shell and confirm the tools are available:
+
+```bash
+git --version
+node --version
+npm --version
+```
+
+If one of those commands is not recognized, install that prerequisite, close the terminal, and open a new terminal before continuing.
+
+### 2. Choose a parent folder
+
+The following examples place the project in your Documents folder. You can use any writable folder.
+
+Windows PowerShell:
+
+```powershell
+cd "$HOME\Documents"
+```
+
+macOS or Linux:
+
+```bash
+cd "$HOME/Documents"
+```
+
+To confirm your current location:
+
+```bash
+pwd
+```
+
+### 3. Clone the repository and enter it
+
+```bash
+git clone https://github.com/Abel356/cash-gap-radar.git
+cd cash-gap-radar
+```
+
+Confirm that you are in the correct folder:
+
+```bash
+git status
+```
+
+You should see the `main` branch and a clean working tree.
+
+If you already downloaded or unzipped the repository, skip `git clone` and change into that folder directly:
+
+Windows PowerShell:
+
+```powershell
+cd "C:\path\to\cash-gap-radar"
+```
+
+macOS or Linux:
+
+```bash
+cd "/path/to/cash-gap-radar"
+```
+
+### 4. Install the dependencies
+
+This repository is locked with pnpm. Node ships with Corepack, which can activate the matching package manager:
+
+```bash
+corepack enable
+corepack prepare pnpm@11.25.0 --activate
+pnpm install
+```
+
+If Corepack is unavailable, npm also works:
+
+```bash
+npm install
+```
+
+Use one package manager consistently. The remaining examples use pnpm; replace `pnpm` with `npm run` for scripts when using npm. For example, `pnpm dev` becomes `npm run dev`.
+
+No `.env` file, API key, database, account, or external service is required. The forecast and fallback message drafts run entirely in the browser.
+
+### 5. Start the development server
+
+If you opened a new terminal, return to the repository first (change the path if you cloned it somewhere else):
+
+```bash
+cd "$HOME/Documents/cash-gap-radar"
+pnpm dev
+```
+
+If your prompt is already inside `cash-gap-radar`, run only `pnpm dev`.
+
+Vite prints a local address similar to:
+
+```text
+http://localhost:5173/
+```
+
+Open that address in your browser. Keep the terminal running while using the app. Press `Ctrl+C` in the terminal when you want to stop the server.
+
+### 6. Try the application
+
+For the fastest walkthrough:
+
+1. Select **Try the live demo**.
+2. Switch between **Optimistic**, **Expected**, and **Cautious** scenarios.
+3. Review the 13-week chart and ranked fixes.
+4. Open an invoice fix and copy the locally generated follow-up draft.
+5. Use the download button and your browser's print dialog to save the radar as a PDF.
+
+To test the upload flow, select **Upload my data** and use:
+
+- `public/sample-bank.csv`
+- `public/sample-invoices.csv`
+
+Both files are synthetic. They are safe to use for demonstrations.
+
+### 7. Run all automated tests
+
+Open a second terminal or stop the development server, then return to the repository:
+
+Windows PowerShell:
+
+```powershell
+cd "$HOME\Documents\cash-gap-radar"
+pnpm test
+```
+
+macOS or Linux:
+
+```bash
+cd "$HOME/Documents/cash-gap-radar"
+pnpm test
+```
+
+The expected result is two passing test files and ten passing tests.
+
+For watch mode while editing the forecast engine:
+
+```bash
+pnpm test:watch
+```
+
+### 8. Create the production build
+
+From the repository folder, run:
+
+```bash
+pnpm build
+```
+
+This command performs two steps:
+
+1. TypeScript checks the application with `tsc -b`.
+2. Vite creates an optimized static site in `dist/`.
+
+The build is successful when the command exits without errors and lists files such as `dist/index.html` and `dist/assets/...`.
+
+Vite may display a non-blocking warning that the main JavaScript chunk is larger than 500 kB. The build still succeeds; code splitting is a future optimization.
+
+### 9. Preview the production build
+
+```bash
+pnpm preview
+```
+
+Open the preview URL printed in the terminal, usually:
+
+```text
+http://localhost:4173/
+```
+
+This serves the compiled files from `dist/` and is the closest local check to a deployed production site. Press `Ctrl+C` to stop the preview server.
+
+### 10. Pull future updates
+
+Return to the repository and pull the latest `main` branch:
+
+```bash
+cd "$HOME/Documents/cash-gap-radar"
+git switch main
+git pull
+pnpm install
+pnpm test
+pnpm build
+```
+
+On Windows PowerShell, `"$HOME/Documents/cash-gap-radar"` also works, or use `"$HOME\Documents\cash-gap-radar"`.
+
+## Available commands
+
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Start the Vite development server with hot reload |
+| `pnpm test` | Run all tests once |
+| `pnpm test:watch` | Re-run tests when source files change |
+| `pnpm build` | Type-check and create the production build in `dist/` |
+| `pnpm preview` | Serve the production build locally |
+
+## Troubleshooting
+
+### `node`, `npm`, or `git` is not recognized
+
+Install the missing prerequisite, close the terminal completely, and open a new one so your `PATH` refreshes.
+
+### The Node.js version is unsupported
+
+Check your version:
+
+```bash
+node --version
+```
+
+Upgrade to Node `20.19.0+` or `22.12.0+`, then run `pnpm install` again.
+
+### `corepack` or `pnpm` is not recognized
+
+Use npm instead:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the URL printed by Vite. For the fastest walkthrough, choose **Try the live demo**.
+The equivalent test, build, and preview commands are `npm test`, `npm run build`, and `npm run preview`.
 
-## Test and build
+### Port 5173 is already in use
+
+Vite normally selects another available port and prints it. You can also choose one explicitly:
 
 ```bash
-npm test
-npm run build
+pnpm dev -- --port 5174
 ```
+
+### The browser shows an old build
+
+Stop the server with `Ctrl+C`, restart it, and perform a hard refresh in the browser. For a production check, rebuild before previewing:
+
+```bash
+pnpm build
+pnpm preview
+```
+
+### Dependency installation is inconsistent
+
+Confirm you are in the repository and use the lockfile:
+
+```bash
+cd "$HOME/Documents/cash-gap-radar"
+pnpm install --frozen-lockfile
+```
+
+If you chose npm instead, continue using npm rather than switching package managers midway.
 
 ## CSV shape
 
