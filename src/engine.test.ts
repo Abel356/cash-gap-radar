@@ -48,3 +48,26 @@ describe('customer profiles', () => {
     expect(profiles.B.medianLateness).toBe(5)
   })
 })
+
+describe('13-week forecast', () => {
+  it('keeps the engine deterministic and seeds an actionable demo gap', () => {
+    const demo = createDemoData(day)
+    const input = { ...demo, today: day }
+    const first = forecastCash(input)
+    const second = forecastCash(input)
+    expect(first.scenarios.expected.weeks.map((week) => week.endBalance)).toEqual(second.scenarios.expected.weeks.map((week) => week.endBalance))
+    expect(first.scenarios.expected.weeks).toHaveLength(13)
+    expect(first.scenarios.expected.shortfall).not.toBeNull()
+    expect(first.fixes.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('treats a balance exactly at the buffer as safe', () => {
+    const result = forecastCash({ transactions: [], invoices: [], openingBalance: 5000, safetyBuffer: 5000, today: day })
+    expect(result.scenarios.expected.shortfall).toBeNull()
+  })
+
+  it('detects a balance below the buffer immediately', () => {
+    const result = forecastCash({ transactions: [], invoices: [], openingBalance: 4999, safetyBuffer: 5000, today: day })
+    expect(result.scenarios.expected.shortfall?.amount).toBe(1)
+  })
+})
