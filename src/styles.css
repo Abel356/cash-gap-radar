@@ -248,3 +248,53 @@ th { color: #67726c; background: #f5f3ed; font-size: 8px; text-transform: upperc
   .hero-visual { width: min(560px, 100%); margin: -12px auto 0; }
   .note-one { left: 0; }
   .note-two { right: 0; }
+  .trust-grid > div { padding-left: 52px; }
+  .mapping-grid { grid-template-columns: repeat(2, 1fr); }
+  .headline-card { grid-template-columns: 1fr; }
+  .headline-metrics { grid-template-columns: repeat(3, 1fr); border-top: 1px solid #e0ddd5; border-left: 0; }
+  .headline-metrics > div:last-child { grid-column: auto; }
+  .headline-metrics > div:nth-child(3) { border-left: 1px solid #ddd9d0; }
+  .fix-grid { grid-template-columns: 1fr; }
+  .fix-card { min-height: 0; }
+  .lower-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .wrap, .radar-wrap { width: min(100% - 28px, 1180px); }
+  .topbar { height: 72px; }
+  .topbar .privacy-pill { display: none; }
+  .hero { min-height: auto; padding: 40px 0 70px; gap: 45px; }
+  .hero h1 { font-size: 48px; }
+  .hero-lede { font-size: 15px; }
+  .hero-actions { width: 100%; flex-direction: column; }
+  .hero-actions .btn { width: 100%; }
+  .hero-visual { min-height: 430px; }
+  .preview-card { padding: 18px; }
+  .floating-note { display: none; }
+  .trust-grid { grid-template-columns: 1fr; }
+  .trust-grid > div { min-height: 100px; border-bottom: 1px solid rgba(255,255,255,.1); }
+  .flow-wrap { padding-top: 50px; }
+  .flow-heading h1 { font-size: 36px; }
+  .upload-grid, .money-inputs { grid-template-columns: 1fr; }
+  .mapper-panel, .setup-card { padding: 22px; }
+  .mapper-head, .mapper-actions, .section-heading { align-items: stretch; flex-direction: column; }
+  .date-order { align-self: stretch; }
+  .mapping-grid { grid-template-columns: 1fr; }
+  .radar-nav { padding: 0 14px; }
+  .radar-nav .privacy-pill, .radar-nav .text-button { display: none; }
+  .radar-wrap { padding-top: 28px; }
+  .radar-header { align-items: stretch; flex-direction: column; }
+  .scenario-control { align-items: stretch; }
+  .scenario-control > div { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .headline-main { padding: 28px 22px; }
+  .headline-main h2 { font-size: 28px; }
+  .headline-metrics { grid-template-columns: 1fr 1fr; padding: 20px; }
+  .headline-metrics > div:last-child { grid-column: 1 / -1; }
+  .headline-metrics > div:nth-child(3) { border-left: 0; }
+  .chart-card, .drivers-card { padding: 22px 14px; }
+  .chart-legend { display: none; }
+  .chart-area { height: 270px; }
+  .coverage-stat { padding: 12px 0 0; border-top: 1px solid #d8d5cc; border-left: 0; }
+  .radar-footer { flex-wrap: wrap; }
+  .modal { padding: 26px 20px; }
+}
