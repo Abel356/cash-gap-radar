@@ -48,3 +48,53 @@ export async function readCsv(file: File): Promise<ParsedCsv> {
   })
 }
 
+function findHeader(headers: string[], candidates: string[]): string {
+  const normalized = headers.map((header) => header.toLowerCase().replace(/[^a-z0-9]/g, ''))
+  const index = normalized.findIndex((header) => candidates.some((candidate) => header.includes(candidate)))
+  return index >= 0 ? headers[index] : ''
+}
+
+export function guessBankMapping(headers: string[]): BankMapping {
+  return {
+    date: findHeader(headers, ['date', 'posted']),
+    description: findHeader(headers, ['description', 'merchant', 'memo', 'details', 'name']),
+    amount: findHeader(headers, ['amount', 'value']),
+    debit: findHeader(headers, ['debit', 'withdrawal', 'moneyout']),
+    credit: findHeader(headers, ['credit', 'deposit', 'moneyin']),
+    balance: findHeader(headers, ['balance', 'runningbalance']),
+  }
+}
+
+export function guessInvoiceMapping(headers: string[]): InvoiceMapping {
+  return {
+    customer: findHeader(headers, ['customer', 'client', 'company', 'name']),
+    invoiceNumber: findHeader(headers, ['invoicenumber', 'invoiceid', 'number', 'invoice']),
+    amount: findHeader(headers, ['amount', 'total', 'value']),
+    issueDate: findHeader(headers, ['issuedate', 'createddate', 'invoicecreated', 'issued']),
+    dueDate: findHeader(headers, ['duedate', 'due']),
+    paidDate: findHeader(headers, ['paiddate', 'paymentdate', 'paid']),
+  }
+}
+
+export function parseMoney(value: string | undefined): number {
+  if (!value) return 0
+  const negative = /^\s*\(.*\)\s*$/.test(value)
+  const cleaned = value.replace(/[()$£€¥,\s]/g, '')
+  const number = Number(cleaned)
+  if (!Number.isFinite(number)) throw new Error(`"${value}" is not a valid amount`)
+  return negative ? -Math.abs(number) : number
+}
+
+export function parseDateValue(value: string, dateOrder: DateOrder): Date {
+  const trimmed = value?.trim()
+  if (!trimmed) throw new Error('date is blank')
+  const formats = trimmed.match(/^\d{4}-\d{1,2}-\d{1,2}$/)
+    ? ['yyyy-M-d']
+    : dateOrder === 'dmy'
+      ? ['d/M/yyyy', 'd-M-yyyy', 'd MMM yyyy']
+      : ['M/d/yyyy', 'M-d-yyyy', 'MMM d yyyy']
+  for (const format of formats) {
+    const parsed = parse(trimmed, format, new Date(2000, 0, 1))
+    if (isValid(parsed)) return parsed
+  }
+  throw new Error(`"${value}" is not a recognized date`)
