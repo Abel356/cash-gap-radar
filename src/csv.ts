@@ -98,3 +98,53 @@ export function parseDateValue(value: string, dateOrder: DateOrder): Date {
     if (isValid(parsed)) return parsed
   }
   throw new Error(`"${value}" is not a recognized date`)
+}
+
+export function rowsToTransactions(
+  rows: CsvRow[],
+  mapping: BankMapping,
+  dateOrder: DateOrder,
+  skipBadRows = false,
+): { data: Transaction[]; skipped: string[] } {
+  if (!mapping.date || !mapping.description || (!mapping.amount && !mapping.debit && !mapping.credit)) {
+    throw new Error('Map a date, description, and either amount or debit/credit columns.')
+  }
+  const data: Transaction[] = []
+  const skipped: string[] = []
+  rows.forEach((row, index) => {
+    try {
+      const amount = mapping.amount
+        ? parseMoney(row[mapping.amount])
+        : parseMoney(row[mapping.credit]) - Math.abs(parseMoney(row[mapping.debit]))
+      data.push({
+        id: `bank-${index}`,
+        date: parseDateValue(row[mapping.date], dateOrder),
+        description: row[mapping.description]?.trim() || 'Unlabelled transaction',
+        amount,
+        balance: mapping.balance && row[mapping.balance] ? parseMoney(row[mapping.balance]) : undefined,
+      })
+    } catch (error) {
+      const message = `Bank row ${index + 2}: ${(error as Error).message}`
+      if (!skipBadRows) throw new Error(message)
+      skipped.push(message)
+    }
+  })
+  return { data, skipped }
+}
+
+export function rowsToInvoices(
+  rows: CsvRow[],
+  mapping: InvoiceMapping,
+  dateOrder: DateOrder,
+  skipBadRows = false,
+): { data: Invoice[]; skipped: string[] } {
+  const required = [mapping.customer, mapping.invoiceNumber, mapping.amount, mapping.issueDate, mapping.dueDate]
+  if (required.some((field) => !field)) {
+    throw new Error('Map customer, invoice number, amount, issue date, and due date columns.')
+  }
+  const data: Invoice[] = []
+  const skipped: string[] = []
+  rows.forEach((row, index) => {
+    try {
+      data.push({
+        id: `invoice-${index}`,
