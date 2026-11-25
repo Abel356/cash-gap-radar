@@ -198,3 +198,53 @@ function projectionForScenario(
 
   const shortWeek = weeks.find((week) => week.endBalance < input.safetyBuffer)
   return {
+    weeks,
+    shortfall: shortWeek ? {
+      week: shortWeek.weekStart,
+      amount: input.safetyBuffer - shortWeek.endBalance,
+      scenario,
+    } : null,
+  }
+}
+
+function rankFixes(
+  input: ForecastInput,
+  expected: ScenarioProjection,
+  recurring: RecurringItem[],
+  profiles: Record<string, CustomerProfile>,
+): Fix[] {
+  if (!expected.shortfall) return []
+  const shortWeek = expected.weeks.find((week) => week.weekStart.getTime() === expected.shortfall!.week.getTime())!
+  const candidates: Fix[] = []
+
+  for (const invoice of input.invoices.filter((item) => !item.paidDate)) {
+    const expectedDate = projectedInvoiceDate(invoice, profiles[invoice.customer], 'expected', input.today)
+    if (isAfter(expectedDate, shortWeek.weekEnd)) {
+      const confidencePenalty = profiles[invoice.customer].confidence === 'low' ? 0.72 : 1
+      candidates.push({
+        id: `chase-${invoice.id}`,
+        kind: 'chase-invoice',
+        title: `Nudge ${invoice.customer}`,
+        detail: `${invoice.invoiceNumber} is forecast after the gap. Ask for payment within 5 days.`,
+        impact: invoice.amount,
+        effort: 'low',
+        invoiceId: invoice.id,
+        score: invoice.amount * confidencePenalty,
+      })
+    }
+  }
+
+  const beforeGapItems = expected.weeks
+    .filter((week) => !isAfter(week.weekStart, shortWeek.weekStart))
+    .flatMap((week) => week.items)
+    .filter((item) => item.kind === 'recurring' && item.amount < 0)
+  for (const item of beforeGapItems) {
+    const recurringItem = recurring.find((recurringEntry) => recurringEntry.id === item.recurringId)
+    if (!recurringItem || recurringItem.isPayroll) continue
+    const impact = Math.abs(item.amount)
+    candidates.push({
+      id: `delay-${item.id}`,
+      kind: 'delay-bill',
+      title: `Move ${titleCase(item.description)}`,
+      detail: 'Ask the vendor to move this payment beyond the tight week.',
+      impact,
