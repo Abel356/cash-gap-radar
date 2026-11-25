@@ -198,3 +198,53 @@ function UploadFlow({ onBack, onReady }: { onBack: () => void; onReady: (data: S
       }
     } catch (caught) { setError((caught as Error).message) }
   }
+
+  const continueFlow = (skipBadRows = false) => {
+    if (!bank || !invoice || !bankMap || !invoiceMap) return
+    setError('')
+    try {
+      const bankResult = rowsToTransactions(bank.rows, bankMap, dateOrder, skipBadRows)
+      const invoiceResult = rowsToInvoices(invoice.rows, invoiceMap, dateOrder, skipBadRows)
+      const balanceRows = bankResult.data.filter((row) => row.balance !== undefined).sort((a, b) => b.date.getTime() - a.date.getTime())
+      onReady({
+        businessName: 'Your business',
+        transactions: bankResult.data,
+        invoices: invoiceResult.data,
+        openingBalance: balanceRows[0]?.balance ?? 0,
+        safetyBuffer: 0,
+        isDemo: false,
+        skippedRows: [...bankResult.skipped, ...invoiceResult.skipped],
+      })
+    } catch (caught) { setError((caught as Error).message) }
+  }
+
+  return (
+    <FlowShell onBack={onBack} step="Step 1 of 2 · Add your data">
+      <div className="flow-heading"><span className="eyebrow">Private by design</span><h1>Bring the two files that tell the story.</h1><p>We read them in your browser. They are never uploaded to a server.</p></div>
+      {error && <div className="error-banner" role="alert"><Icon name="warn" /><div><strong>We found a problem</strong><span>{error}</span></div>{bank && invoice && <button onClick={() => continueFlow(true)}>Skip bad rows and continue</button>}</div>}
+      <div className="upload-grid">
+        <FileDrop title="Bank transactions" subtitle="CSV with date, description, and amount" fileName={bankName} onFile={(file) => handleFile(file, 'bank')} />
+        <FileDrop title="Invoices" subtitle="CSV with customer, amount, and due date" fileName={invoiceName} onFile={(file) => handleFile(file, 'invoice')} />
+      </div>
+      {(bank && invoice && bankMap && invoiceMap) && (
+        <div className="mapper-panel">
+          <div className="mapper-head"><div><span className="eyebrow">Column check</span><h2>Make sure we read that correctly.</h2></div><label className="date-order">Date format<select value={dateOrder} onChange={(event) => setDateOrder(event.target.value as DateOrder)}><option value="mdy">MM/DD/YYYY</option><option value="dmy">DD/MM/YYYY</option></select></label></div>
+          <MappingSection title="Bank columns" headers={bank.headers} mapping={bankMap} required={['date', 'description']} onChange={(key, value) => setBankMap({ ...bankMap, [key]: value })} />
+          <PreviewTable rows={bank.rows} headers={bank.headers} />
+          <MappingSection title="Invoice columns" headers={invoice.headers} mapping={invoiceMap} required={['customer', 'invoiceNumber', 'amount', 'issueDate', 'dueDate']} onChange={(key, value) => setInvoiceMap({ ...invoiceMap, [key]: value })} />
+          <PreviewTable rows={invoice.rows} headers={invoice.headers} />
+          <div className="mapper-actions"><span><Icon name="lock" size={15} /> Processed locally</span><button className="btn btn-primary" onClick={() => continueFlow()}>Set my safety line <Icon name="arrow" /></button></div>
+        </div>
+      )}
+    </FlowShell>
+  )
+}
+
+function FileDrop({ title, subtitle, fileName, onFile }: { title: string; subtitle: string; fileName: string; onFile: (file: File) => void }) {
+  const ref = useRef<HTMLInputElement>(null)
+  const [dragging, setDragging] = useState(false)
+  return (
+    <button className={`file-drop ${dragging ? 'dragging' : ''} ${fileName ? 'loaded' : ''}`} onClick={() => ref.current?.click()} onDragOver={(event) => { event.preventDefault(); setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={(event) => { event.preventDefault(); setDragging(false); const file = event.dataTransfer.files[0]; if (file) onFile(file) }}>
+      <input ref={ref} type="file" accept=".csv,text/csv" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) onFile(file) }} />
+      <span className="drop-icon"><Icon name={fileName ? 'check' : 'upload'} /></span>
+      <strong>{fileName || title}</strong><span>{fileName ? 'Ready to map' : subtitle}</span><small>{fileName ? 'Choose a different file' : 'Drop CSV here or click to browse · 5 MB max'}</small>
