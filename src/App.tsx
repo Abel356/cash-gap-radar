@@ -148,3 +148,53 @@ function Landing({ onDemo, onUpload }: { onDemo: () => void; onUpload: () => voi
 
 function HeroPreview() {
   const bars = [58, 46, 71, 50, 61, 33, 27, 44, 37, 52, 48, 57, 63]
+  return (
+    <div className="hero-visual" aria-label="Example cash forecast">
+      <div className="preview-glow" />
+      <div className="preview-card">
+        <div className="preview-top"><div><span className="preview-label">EXPECTED SCENARIO</span><strong>Maple & Main</strong></div><span className="demo-tag">Demo</span></div>
+        <div className="alert-preview"><span className="alert-icon"><Icon name="warn" /></span><div><span>Cash gap detected</span><strong>Short by $4,200 in 6 weeks</strong></div></div>
+        <div className="mini-chart">
+          <div className="safety-line"><span>Safety line</span></div>
+          {bars.map((height, index) => <span key={index} className={index === 5 ? 'danger' : ''} style={{ height: `${height}%` }} />)}
+        </div>
+        <div className="preview-fix"><span className="fix-number">1</span><div><span>Best move</span><strong>Nudge Harbor Dental</strong></div><b>+$8.4k</b></div>
+        <div className="preview-footer"><Icon name="spark" size={15} /> Two invoices can cover the gap</div>
+      </div>
+      <div className="floating-note note-one"><Icon name="check" size={15} /> Clear answer in seconds</div>
+      <div className="floating-note note-two"><Icon name="lock" size={15} /> Runs in your browser</div>
+    </div>
+  )
+}
+
+function FlowShell({ children, onBack, step }: { children: React.ReactNode; onBack: () => void; step: string }) {
+  return (
+    <main className="flow-page">
+      <nav className="flow-nav wrap"><button className="logo-button" onClick={onBack}><Logo /></button><span className="step-label">{step}</span></nav>
+      <div className="flow-wrap">{children}</div>
+    </main>
+  )
+}
+
+function UploadFlow({ onBack, onReady }: { onBack: () => void; onReady: (data: SessionData) => void }) {
+  const [bank, setBank] = useState<ParsedCsv | null>(null)
+  const [invoice, setInvoice] = useState<ParsedCsv | null>(null)
+  const [bankName, setBankName] = useState('')
+  const [invoiceName, setInvoiceName] = useState('')
+  const [bankMap, setBankMap] = useState<BankMapping | null>(null)
+  const [invoiceMap, setInvoiceMap] = useState<InvoiceMapping | null>(null)
+  const [dateOrder, setDateOrder] = useState<DateOrder>('mdy')
+  const [error, setError] = useState('')
+
+  const handleFile = async (file: File, kind: 'bank' | 'invoice') => {
+    setError('')
+    try {
+      const parsed = await readCsv(file)
+      if (!parsed.headers.length) throw new Error(`${file.name} has no header row.`)
+      if (kind === 'bank') {
+        setBank(parsed); setBankName(file.name); setBankMap(guessBankMapping(parsed.headers))
+      } else {
+        setInvoice(parsed); setInvoiceName(file.name); setInvoiceMap(guessInvoiceMapping(parsed.headers))
+      }
+    } catch (caught) { setError((caught as Error).message) }
+  }
