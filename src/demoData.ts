@@ -98,3 +98,4 @@ export function createDemoData(today = new Date()): DemoDataset {
 
 export function createNoShortfallData(today = new Date()): DemoDataset {
   return { ...createDemoData(today), businessName: 'Maple & Main — healthy case', openingBalance: 92_000 }
+}
