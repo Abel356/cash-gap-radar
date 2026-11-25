@@ -248,3 +248,53 @@ function rankFixes(
       title: `Move ${titleCase(item.description)}`,
       detail: 'Ask the vendor to move this payment beyond the tight week.',
       impact,
+      effort: 'medium',
+      recurringId: item.recurringId,
+      risk: CRITICAL_TERMS.test(item.description) ? 'Critical vendor — confirm terms first' : undefined,
+      score: impact / 2 * (CRITICAL_TERMS.test(item.description) ? 0.55 : 1),
+    })
+    if (impact >= expected.shortfall.amount * 0.25) {
+      candidates.push({
+        id: `split-${item.id}`,
+        kind: 'split-outflow',
+        title: `Split ${titleCase(item.description)}`,
+        detail: 'Propose half now and half after the tight week.',
+        impact: impact / 2,
+        effort: 'medium',
+        recurringId: item.recurringId,
+        score: impact / 4,
+      })
+    }
+  }
+
+  const ranked = candidates.sort((a, b) => b.score - a.score)
+  const selected: Fix[] = []
+  let covered = 0
+  const seen = new Set<string>()
+  for (const fix of ranked) {
+    const source = fix.invoiceId ?? fix.recurringId ?? fix.id
+    if (seen.has(source)) continue
+    selected.push(fix)
+    seen.add(source)
+    covered += fix.impact
+    if (covered >= expected.shortfall.amount || selected.length === 3) break
+  }
+  return selected
+}
+
+function titleCase(value: string): string {
+  return value.replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+export function forecastCash(input: ForecastInput): ForecastResult {
+  const recurring = detectRecurring(input.transactions)
+  const profiles = buildCustomerProfiles(input.invoices)
+  const scenarios = Object.fromEntries(SCENARIOS.map((scenario) => [
+    scenario,
+    projectionForScenario(input, recurring, profiles, scenario),
+  ])) as Record<Scenario, ScenarioProjection>
+  const expected = scenarios.expected
+  const shortWeek = expected.shortfall
+    ? expected.weeks.find((week) => week.weekStart.getTime() === expected.shortfall!.week.getTime())
+    : expected.weeks.reduce((lowest, week) => week.endBalance < lowest.endBalance ? week : lowest)
+  const drivers = (shortWeek?.items ?? [])
