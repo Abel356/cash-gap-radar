@@ -98,3 +98,53 @@ function App() {
           onContinue={(openingBalance, safetyBuffer) => {
             setSession({ ...session, openingBalance, safetyBuffer })
             setScreen('radar')
+          }}
+        />
+      )}
+      {screen === 'radar' && session && (
+        <Radar
+          session={session}
+          scenario={scenario}
+          today={today}
+          onScenario={setScenario}
+          onReset={() => { setSession(null); setScreen('landing') }}
+          onEdit={() => setScreen(session.isDemo ? 'landing' : 'setup')}
+        />
+      )}
+    </div>
+  )
+}
+
+function Landing({ onDemo, onUpload }: { onDemo: () => void; onUpload: () => void }) {
+  return (
+    <main className="landing">
+      <nav className="topbar wrap" aria-label="Main navigation">
+        <Logo />
+        <div className="privacy-pill"><Icon name="lock" size={15} /> Your files stay on this device</div>
+      </nav>
+      <section className="hero wrap">
+        <div className="hero-copy">
+          <span className="eyebrow"><span className="live-dot" /> 13-week cash clarity</span>
+          <h1>See the cash gap<br /><em>before it sees you.</em></h1>
+          <p className="hero-lede">Know exactly when cash gets tight, what causes it, and the smallest moves that can close the gap.</p>
+          <div className="hero-actions">
+            <button className="btn btn-primary btn-large" onClick={onDemo}>Try the live demo <Icon name="arrow" /></button>
+            <button className="btn btn-secondary btn-large" onClick={onUpload}><Icon name="upload" /> Upload my data</button>
+          </div>
+          <p className="microcopy"><Icon name="lock" size={14} /> No signup. No bank connection. Nothing is stored.</p>
+        </div>
+        <HeroPreview />
+      </section>
+      <section className="trust-strip">
+        <div className="wrap trust-grid">
+          <div><span>01</span><strong>Bring two exports</strong><p>Your bank transactions and open invoices.</p></div>
+          <div><span>02</span><strong>See 13 weeks ahead</strong><p>Built from how customers actually pay.</p></div>
+          <div><span>03</span><strong>Know what to do</strong><p>Specific actions ranked by dollars covered.</p></div>
+        </div>
+      </section>
+    </main>
+  )
+}
+
+function HeroPreview() {
+  const bars = [58, 46, 71, 50, 61, 33, 27, 44, 37, 52, 48, 57, 63]
