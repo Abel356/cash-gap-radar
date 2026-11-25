@@ -348,3 +348,49 @@ function Radar({ session, scenario, today, onScenario, onReset, onEdit }: { sess
         </section>
 
         <section className="lower-grid">
+          <details className="assumptions-card">
+            <summary><div><span className="eyebrow">Transparent by design</span><h2>How this forecast was built</h2></div><span className="open-label">View assumptions</span></summary>
+            <ul>{result.assumptions.map((assumption) => <li key={assumption}><Icon name="check" size={15} /> {assumption}</li>)}</ul>
+          </details>
+          <div className="drivers-card"><span className="eyebrow">Main pressure points</span><h2>What drives the tight week</h2>{result.drivers.length ? <ol>{result.drivers.map((driver, index) => <li key={driver}><span>{index + 1}</span>{driver}</li>)}</ol> : <p>No unusual outflows land in the tightest week.</p>}</div>
+        </section>
+        <footer className="radar-footer"><Logo compact /><span>Forecasts are directional decision support, not bookkeeping or financial advice.</span><button onClick={onReset}>Start over</button></footer>
+      </div>
+
+      {selectedFix && <div className="modal-backdrop" onMouseDown={() => setSelectedFix(null)}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setSelectedFix(null)} aria-label="Close"><Icon name="close" /></button><span className="modal-icon"><Icon name={invoiceForFix ? 'mail' : 'spark'} /></span><span className="eyebrow">{invoiceForFix ? 'Ready-to-edit draft' : 'Suggested next step'}</span><h2 id="modal-title">{selectedFix.title}</h2>{invoiceForFix ? <><div className="share-disclosure"><Icon name="lock" size={16} /><div><strong>Nothing is shared.</strong><span>This fallback draft was made locally from the invoice details shown here.</span></div></div><div className="draft-meta"><span>{invoiceForFix.invoiceNumber}</span><span>{CAD.format(invoiceForFix.amount)}</span><span>Due {format(invoiceForFix.dueDate, 'MMM d')}</span></div><textarea readOnly value={draftForInvoice(invoiceForFix, today)} /><button className="btn btn-primary btn-wide" onClick={copyDraft}><Icon name={copied ? 'check' : 'copy'} /> {copied ? 'Copied to clipboard' : 'Copy message'}</button></> : <><p className="modal-detail">{selectedFix.detail}</p><div className="impact-panel"><span>Estimated cash impact</span><strong>{CAD.format(selectedFix.impact)}</strong></div>{selectedFix.risk && <div className="notice"><Icon name="warn" /> {selectedFix.risk}</div>}</>}</div></div>}
+    </main>
+  )
+}
+
+function ScenarioToggle({ value, onChange }: { value: Scenario; onChange: (value: Scenario) => void }) {
+  return <div className="scenario-control"><span>Scenario</span><div>{(['optimistic', 'expected', 'cautious'] as Scenario[]).map((item) => <button key={item} className={item === value ? 'active' : ''} onClick={() => onChange(item)}>{item}</button>)}</div></div>
+}
+
+function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { fullDate: string; inflows: number; outflows: number; balance: number } }> }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0].payload
+  return <div className="chart-tooltip"><strong>Week of {row.fullDate}</strong><span>Money in <b>{CAD.format(row.inflows)}</b></span><span>Money out <b>{CAD.format(row.outflows)}</b></span><span>Ending balance <b>{CAD.format(row.balance)}</b></span></div>
+}
+
+function BalanceDot(props: { cx?: number; cy?: number; payload?: { isShort?: boolean } }) {
+  return <circle cx={props.cx} cy={props.cy} r={props.payload?.isShort ? 5 : 3.5} fill={props.payload?.isShort ? '#b14e3f' : '#fffdf7'} stroke={props.payload?.isShort ? '#b14e3f' : '#173f35'} strokeWidth="2.5" />
+}
+
+function FixCard({ fix, index, onOpen }: { fix: Fix; index: number; onOpen: () => void }) {
+  return <article className={`fix-card ${index === 0 ? 'recommended' : ''}`}>{index === 0 && <span className="recommended-label"><Icon name="spark" size={14} /> Best first move</span>}<div className="fix-card-top"><span className="fix-rank">0{index + 1}</span><span className={`effort effort-${fix.effort}`}>{fix.effort} effort</span></div><h3>{fix.title}</h3><p>{fix.detail}</p>{fix.risk && <span className="risk"><Icon name="warn" size={14} /> {fix.risk}</span>}<div className="fix-impact"><span>Could cover</span><strong>+{CAD.format(fix.impact)}</strong></div><button onClick={onOpen}>{fix.kind === 'chase-invoice' ? 'Draft the message' : 'See the action'} <Icon name="arrow" size={16} /></button></article>
+}
+
+function buildHeadline(result: ForecastResult, scenario: Scenario, buffer: number) {
+  const projection = result.scenarios[scenario]
+  if (!projection.shortfall) return `You stay above ${CAD.format(buffer)} for the next 13 weeks.`
+  const fixText = result.fixes.filter((fix) => fix.kind === 'chase-invoice').slice(0, 2).map((fix) => fix.title.replace('Nudge ', '')).join(' and ')
+  return `You’re short ${CAD.format(projection.shortfall.amount)} in the week of ${format(projection.shortfall.week, 'MMMM d')}.${fixText ? ` ${fixText} can help cover it.` : ''}`
+}
+
+function draftForInvoice(invoice: Invoice, today: Date) {
+  const overdueDays = Math.max(0, Math.round((today.getTime() - invoice.dueDate.getTime()) / 86_400_000))
+  const timing = overdueDays ? `${overdueDays} days past its due date` : `due on ${format(invoice.dueDate, 'MMMM d')}`
+  return `Subject: Quick check on ${invoice.invoiceNumber}\n\nHi ${invoice.customer} team,\n\nI hope you’re well. I’m checking in on invoice ${invoice.invoiceNumber} for ${CAD.format(invoice.amount)}, ${timing}. Could you let me know when we should expect payment? If anything is holding it up, I’m happy to help.\n\nThanks so much,\nMaple & Main`
+}
+
+export default App
