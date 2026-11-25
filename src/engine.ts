@@ -298,3 +298,18 @@ export function forecastCash(input: ForecastInput): ForecastResult {
     ? expected.weeks.find((week) => week.weekStart.getTime() === expected.shortfall!.week.getTime())
     : expected.weeks.reduce((lowest, week) => week.endBalance < lowest.endBalance ? week : lowest)
   const drivers = (shortWeek?.items ?? [])
+    .filter((item) => item.amount < 0)
+    .sort((a, b) => a.amount - b.amount)
+    .slice(0, 3)
+    .map((item) => `${titleCase(item.description)} (${Math.abs(item.amount).toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })})`)
+  const fixes = rankFixes(input, expected, recurring, profiles)
+  const assumptions = [
+    `${recurring.length} repeating cash items were projected from their median cadence and amount.`,
+    ...Object.values(profiles).map((profile) => profile.confidence === 'high'
+      ? `${profile.customer} usually pays ${profile.medianLateness} days after the due date, based on ${profile.sampleSize} paid invoices.`
+      : `${profile.customer} uses the portfolio payment pattern because only ${profile.sampleSize} paid invoice${profile.sampleSize === 1 ? '' : 's'} were found.`),
+    `The safety line is ${input.safetyBuffer.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })}.`,
+  ]
+  const confidence = Object.values(profiles).some((profile) => profile.confidence === 'low') ? 'low' : 'high'
+  return { scenarios, profiles, recurring, drivers, fixes, assumptions, confidence }
+}
