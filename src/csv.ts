@@ -148,3 +148,20 @@ export function rowsToInvoices(
     try {
       data.push({
         id: `invoice-${index}`,
+        customer: row[mapping.customer].trim(),
+        invoiceNumber: row[mapping.invoiceNumber].trim(),
+        amount: Math.abs(parseMoney(row[mapping.amount])),
+        issueDate: parseDateValue(row[mapping.issueDate], dateOrder),
+        dueDate: parseDateValue(row[mapping.dueDate], dateOrder),
+        paidDate: mapping.paidDate && row[mapping.paidDate]?.trim()
+          ? parseDateValue(row[mapping.paidDate], dateOrder)
+          : undefined,
+      })
+    } catch (error) {
+      const message = `Invoice row ${index + 2}: ${(error as Error).message}`
+      if (!skipBadRows) throw new Error(message)
+      skipped.push(message)
+    }
+  })
+  return { data, skipped }
+}
