@@ -98,3 +98,53 @@ export function detectRecurring(transactions: Transaction[]): RecurringItem[] {
   return detected
 }
 
+export function buildCustomerProfiles(invoices: Invoice[]): Record<string, CustomerProfile> {
+  const paid = invoices.filter((invoice) => invoice.paidDate)
+  const portfolioLateness = paid.map((invoice) =>
+    differenceInCalendarDays(invoice.paidDate!, invoice.dueDate),
+  )
+  const fallback = {
+    median: Math.round(median(portfolioLateness)),
+    q25: Math.round(percentile(portfolioLateness, 0.25)),
+    q75: Math.round(percentile(portfolioLateness, 0.75)),
+  }
+  const customers = [...new Set(invoices.map((invoice) => invoice.customer))]
+  return Object.fromEntries(customers.map((customer) => {
+    const values = paid
+      .filter((invoice) => invoice.customer === customer)
+      .map((invoice) => differenceInCalendarDays(invoice.paidDate!, invoice.dueDate))
+    const enough = values.length >= 3
+    return [customer, {
+      customer,
+      medianLateness: enough ? Math.round(median(values)) : fallback.median,
+      q25Lateness: enough ? Math.round(percentile(values, 0.25)) : fallback.q25,
+      q75Lateness: enough ? Math.round(percentile(values, 0.75)) : fallback.q75,
+      sampleSize: values.length,
+      confidence: enough ? 'high' : 'low',
+    } satisfies CustomerProfile]
+  }))
+}
+
+function projectedInvoiceDate(
+  invoice: Invoice,
+  profile: CustomerProfile,
+  scenario: Scenario,
+  today: Date,
+): Date {
+  const lateness = scenario === 'optimistic'
+    ? profile.q25Lateness
+    : scenario === 'cautious'
+      ? profile.q75Lateness
+      : profile.medianLateness
+  let date = addDays(invoice.dueDate, lateness)
+  if (isBefore(date, today)) date = today
+  if (isBefore(invoice.dueDate, today)) {
+    const nudgeFloor = addDays(today, 3)
+    if (isBefore(date, nudgeFloor)) date = nudgeFloor
+  }
+  return date
+}
+
+function projectionForScenario(
+  input: ForecastInput,
+  recurring: RecurringItem[],
