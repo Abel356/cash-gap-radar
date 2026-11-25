@@ -298,3 +298,13 @@ th { color: #67726c; background: #f5f3ed; font-size: 8px; text-transform: upperc
   .radar-footer { flex-wrap: wrap; }
   .modal { padding: 26px 20px; }
 }
+
+@media print {
+  @page { margin: 12mm; }
+  body, .radar-page { background: white; }
+  .radar-nav, .radar-footer button, .scenario-control, .data-table, .fix-card button { display: none !important; }
+  .radar-wrap { width: 100%; padding: 0; }
+  .headline-card, .chart-card, .fix-card, .assumptions-card, .drivers-card { box-shadow: none; break-inside: avoid; }
+  .chart-area { height: 240px; }
+  .actions-section { break-before: page; }
+}
