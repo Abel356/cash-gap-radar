@@ -89,7 +89,7 @@ function App() {
       {screen === 'upload' && (
         <UploadFlow
           onBack={() => setScreen('landing')}
-          onReady={(data) => { setSession(data); setScreen('setup') }}
+          onReady={(data) => { setSession(data); setScenario('expected'); setScreen('setup') }}
         />
       )}
       {screen === 'setup' && session && (
@@ -108,7 +108,7 @@ function App() {
           scenario={scenario}
           today={today}
           onScenario={setScenario}
-          onReset={() => { setSession(null); setScreen('landing') }}
+          onReset={() => { setSession(null); setScenario('expected'); setScreen('landing') }}
           onEdit={() => setScreen(session.isDemo ? 'landing' : 'setup')}
         />
       )}
