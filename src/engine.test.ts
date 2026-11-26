@@ -53,6 +53,17 @@ describe('customer profiles', () => {
 })
 
 describe('13-week forecast', () => {
+  it('moves demo receipts across weeks in all three scenarios', () => {
+    for (let offset = 0; offset < 7; offset++) {
+      const today = addDays(day, offset)
+      const demo = createDemoData(today)
+      const result = forecastCash({ ...demo, today })
+      const inflows = (scenario: 'optimistic' | 'expected' | 'cautious') => result.scenarios[scenario].weeks.map((week) => week.inflows)
+      expect(inflows('optimistic')).not.toEqual(inflows('expected'))
+      expect(inflows('expected')).not.toEqual(inflows('cautious'))
+    }
+  })
+
   it('shows distinct weekly outcomes for all three sample CSV scenarios', () => {
     for (const today of [day, addDays(day, 365)]) {
       const bank = Papa.parse<Record<string, string>>(sampleCsv('bank', today), { header: true, skipEmptyLines: true }).data

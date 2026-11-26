@@ -51,15 +51,16 @@ export function createDemoData(today = new Date()): DemoDataset {
   const paidInvoices: Invoice[] = CUSTOMERS.flatMap((customer, customerIndex) =>
     Array.from({ length: 5 }, (_, invoiceIndex) => {
       const dueDate = subDays(today, 38 + invoiceIndex * 31 + customerIndex)
-      const variation = [-2, 0, 1, 3, -1][invoiceIndex]
+      const amountVariation = [-2, 0, 1, 3, -1][invoiceIndex]
+      const paymentVariation = [-18, -9, 0, 9, 18][invoiceIndex]
       return {
         id: `paid-${customerIndex}-${invoiceIndex}`,
         customer: customer.name,
         invoiceNumber: `MM-${2300 + customerIndex * 10 + invoiceIndex}`,
-        amount: customer.amount + variation * 90,
+        amount: customer.amount + amountVariation * 90,
         issueDate: subDays(dueDate, 30),
         dueDate,
-        paidDate: addDays(dueDate, customer.lateness + variation),
+        paidDate: addDays(dueDate, customer.lateness + paymentVariation),
       }
     }),
   )
