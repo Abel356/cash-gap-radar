@@ -1,6 +1,9 @@
 import { addDays } from 'date-fns'
+import Papa from 'papaparse'
 import { describe, expect, it } from 'vitest'
 import { createDemoData } from './demoData'
+import { rowsToInvoices, rowsToTransactions } from './csv'
+import { sampleCsv } from './sampleCsv'
 import { buildCustomerProfiles, detectRecurring, forecastCash, normalizeDescription } from './engine'
 import type { Invoice, Transaction } from './types'
 
@@ -50,6 +53,19 @@ describe('customer profiles', () => {
 })
 
 describe('13-week forecast', () => {
+  it('shows distinct weekly outcomes for all three sample CSV scenarios', () => {
+    for (const today of [day, addDays(day, 365)]) {
+      const bank = Papa.parse<Record<string, string>>(sampleCsv('bank', today), { header: true, skipEmptyLines: true }).data
+      const invoices = Papa.parse<Record<string, string>>(sampleCsv('invoices', today), { header: true, skipEmptyLines: true }).data
+      const transactions = rowsToTransactions(bank, { date: 'date', description: 'description', amount: 'amount', balance: 'balance', debit: '', credit: '' }, 'mdy').data
+      const invoiceData = rowsToInvoices(invoices, { customer: 'customer', invoiceNumber: 'invoice_number', amount: 'amount', issueDate: 'issue_date', dueDate: 'due_date', paidDate: 'paid_date' }, 'mdy').data
+      const result = forecastCash({ transactions, invoices: invoiceData, openingBalance: 35_500, safetyBuffer: 9_100, today })
+      const inflows = (scenario: 'optimistic' | 'expected' | 'cautious') => result.scenarios[scenario].weeks.map((week) => week.inflows)
+      expect(inflows('optimistic')).not.toEqual(inflows('expected'))
+      expect(inflows('expected')).not.toEqual(inflows('cautious'))
+    }
+  })
+
   it('keeps the engine deterministic and seeds an actionable demo gap', () => {
     const demo = createDemoData(day)
     const input = { ...demo, today: day }

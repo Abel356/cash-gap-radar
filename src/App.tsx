@@ -14,6 +14,7 @@ import {
   YAxis,
 } from 'recharts'
 import { createDemoData } from './demoData'
+import { downloadSampleCsv } from './sampleCsv'
 import { forecastCash } from './engine'
 import {
   guessBankMapping,
@@ -225,6 +226,11 @@ function UploadFlow({ onBack, onReady }: { onBack: () => void; onReady: (data: S
       <div className="upload-grid">
         <FileDrop title="Bank transactions" subtitle="CSV with date, description, and amount" fileName={bankName} onFile={(file) => handleFile(file, 'bank')} />
         <FileDrop title="Invoices" subtitle="CSV with customer, amount, and due date" fileName={invoiceName} onFile={(file) => handleFile(file, 'invoice')} />
+      </div>
+      <div className="sample-downloads">
+        <span>Want to explore with example data?</span>
+        <button onClick={() => downloadSampleCsv('bank')}>Download sample bank CSV</button>
+        <button onClick={() => downloadSampleCsv('invoices')}>Download sample invoice CSV</button>
       </div>
       {(bank && invoice && bankMap && invoiceMap) && (
         <div className="mapper-panel">

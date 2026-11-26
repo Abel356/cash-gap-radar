@@ -146,6 +146,8 @@ button { cursor: pointer; }
 .error-banner span, .confidence-banner span { font-size: 11px; line-height: 1.5; }
 .error-banner button { border: 0; color: #7a3129; background: transparent; font-size: 11px; font-weight: 800; text-decoration: underline; }
 .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sample-downloads { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 15px; color: #69746f; font-size: 11px; }
+.sample-downloads button { padding: 2px 0; border: 0; background: transparent; color: var(--green-2); font-size: 11px; font-weight: 700; text-decoration: underline; }
 .file-drop { min-height: 215px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 25px; color: var(--ink); background: rgba(255,255,255,.55); border: 1.5px dashed #b8bdb6; border-radius: 14px; transition: .2s; }
 .file-drop:hover, .file-drop.dragging { background: #fffdf8; border-color: var(--green-2); transform: translateY(-2px); box-shadow: 0 14px 34px rgba(33,68,57,.08); }
 .file-drop.loaded { background: #f4faf6; border-style: solid; border-color: #9dc7b1; }
