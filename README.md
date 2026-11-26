@@ -78,20 +78,16 @@ Why this matters: the person making a cash decision can inspect the assumptions 
 
 ## Try your own upload with example files
 
-The live demo above generates its own example records. This separate path shows how a business would bring its exports. Download these synthetic CSV files:
-
-- [Sample bank transactions](https://raw.githubusercontent.com/Abel356/cash-gap-radar/main/public/sample-bank.csv)
-- [Sample invoices](https://raw.githubusercontent.com/Abel356/cash-gap-radar/main/public/sample-invoices.csv)
-
-If a file opens as text, use your browser's **Save page as** and keep the `.csv` extension.
+The live demo above generates its own example records. This separate path shows how a business would bring its exports. The upload page offers two synthetic sample downloads, dated relative to the day you open it so the forecast remains useful over time.
 
 1. Return to the [landing page](https://cash-gap-radar.vercel.app) and click **Upload my data**.
-2. Choose the bank file under **Bank transactions** and the invoice file under **Invoices**.
-3. Review the column choices, then click **Set my safety line**.
-4. The sample's **Current bank balance** is prefilled as **$35,500** from its latest dated balance row. Its suggested **Safety buffer** is **$9,100**, the largest payroll-like payment in that file. You can change either number.
-5. Click **Build my 13-week radar**.
+2. Click **Download sample bank CSV** and **Download sample invoice CSV** below the upload areas.
+3. Choose the downloaded files under **Bank transactions** and **Invoices** respectively.
+4. Review the column choices, then click **Set my safety line**.
+5. The sample's **Current bank balance** is prefilled as **$35,500** from its latest dated balance row. Its suggested **Safety buffer** is **$9,100**, the largest payroll-like payment in that file. You can change either number.
+6. Click **Build my 13-week radar**.
 
-This sample upload contains **10 transactions and 8 invoices**, so its forecast differs from the one-click demo. The app uses the bank amount as a starting point, treats the safety buffer as the threshold, and uses the paid invoices to estimate when the open ones may arrive. Its dates and projected gap depend on when you open it. The sample is useful for seeing the complete upload, mapping, and forecast journey without using a real company's records.
+This sample upload contains **10 transactions and 8 invoices**, so its forecast differs from the one-click demo. The app uses the bank amount as a starting point, treats the safety buffer as the threshold, and uses the paid invoices to estimate when the open ones may arrive. In this sample, the customers have paid at meaningfully different speeds: switch among **Optimistic**, **Expected**, and **Cautious** to see their future receipts land in different weeks. The sample is useful for seeing the complete upload, mapping, and forecast journey without using a real company's records.
 
 ## A few boundaries
 
