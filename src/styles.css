@@ -36,6 +36,9 @@ button { cursor: pointer; }
 .privacy-pill { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; color: #4c6259; background: rgba(255,255,255,.58); border: 1px solid rgba(23,63,53,.13); border-radius: 100px; font-size: 12px; font-weight: 600; transition: transform .25s ease, background .25s ease, border-color .25s ease, box-shadow .25s ease; }
 
 .landing { min-height: 100vh; overflow: hidden; background: radial-gradient(circle at 83% 24%, rgba(191,221,204,.42), transparent 29%), linear-gradient(180deg, #faf7ef 0%, #f4f0e6 100%); }
+.landing .logo:hover { color: var(--green-2); transform: translateY(-1px); }
+.landing .logo:hover .logo-mark { transform: rotate(18deg) scale(1.06); box-shadow: 0 8px 18px rgba(23,63,53,.2); }
+.landing .privacy-pill:hover { transform: translateY(-2px); background: rgba(255,255,255,.88); border-color: rgba(23,63,53,.22); box-shadow: 0 9px 22px rgba(23,63,53,.09); }
 .landing .topbar { animation: landing-drop .65s .04s both cubic-bezier(.2,.8,.2,1); }
 .landing .hero-copy > * { animation: landing-rise .72s both cubic-bezier(.2,.8,.2,1); }
 .landing .hero-copy > :nth-child(1) { animation-delay: .12s; }
@@ -335,6 +338,32 @@ th { color: #67726c; background: #f5f3ed; font-size: 8px; text-transform: upperc
   .coverage-stat { padding: 12px 0 0; border-top: 1px solid #d8d5cc; border-left: 0; }
   .radar-footer { flex-wrap: wrap; }
   .modal { padding: 26px 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing .topbar,
+  .landing .hero-copy > *,
+  .landing .preview-glow,
+  .landing .preview-card,
+  .landing .floating-note,
+  .landing .trust-strip,
+  .landing .trust-grid > div { animation: none !important; }
+  .landing .logo,
+  .landing .logo-mark,
+  .landing .privacy-pill,
+  .landing .btn,
+  .landing .preview-card,
+  .landing .mini-chart > span,
+  .landing .preview-fix,
+  .landing .floating-note,
+  .landing .trust-grid > div { transition-duration: .01ms !important; }
+  .landing .logo:hover,
+  .landing .logo:hover .logo-mark,
+  .landing .privacy-pill:hover,
+  .landing .btn:hover,
+  .landing .preview-card:hover,
+  .landing .floating-note:hover,
+  .landing .trust-grid > div:hover { transform: none; }
 }
 
 @media print {
