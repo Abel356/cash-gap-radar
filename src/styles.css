@@ -105,8 +105,8 @@ button { cursor: pointer; }
 .mini-chart > span:hover { filter: saturate(1.5) brightness(1.05); transform: scaleX(1.14) scaleY(1.22); }
 .mini-chart > span:nth-of-type(even) { background: #d5c8b8; }
 .mini-chart > span.danger { background: #c36d5e; }
-.safety-line { position: absolute; left: 0; right: 0; bottom: 34%; border-top: 1px dashed #b56559; }
-.safety-line span { position: absolute; right: 0; bottom: 4px; color: #9a5c52; font-size: 8px; }
+.safety-line { z-index: 2; position: absolute; left: 0; right: 0; bottom: 34%; border-top: 1px dashed #b56559; pointer-events: none; }
+.safety-line span { position: absolute; right: 0; bottom: 4px; padding: 2px 5px; color: #85483f; background: rgba(255,253,248,.94); border-radius: 4px; font-size: 8px; font-weight: 700; }
 .preview-fix { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; margin-top: 20px; padding: 13px; border: 1px solid #deddd6; border-radius: 9px; }
 .preview-fix { transition: background .25s ease, border-color .25s ease, transform .25s ease; }
 .preview-fix:hover { background: #edf7f1; border-color: #80ad98; transform: translateX(10px) scale(1.035); box-shadow: 0 14px 28px rgba(23,63,53,.12); }
