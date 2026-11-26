@@ -310,7 +310,7 @@ function Radar({ session, scenario, today, onScenario, onReset, onEdit }: { sess
 
   const copyDraft = async () => {
     if (!invoiceForFix) return
-    await navigator.clipboard.writeText(draftForInvoice(invoiceForFix, today))
+    await navigator.clipboard.writeText(draftForInvoice(invoiceForFix, today, session.businessName))
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1800)
   }
@@ -324,7 +324,7 @@ function Radar({ session, scenario, today, onScenario, onReset, onEdit }: { sess
         {result.confidence === 'low' && <div className="confidence-banner"><Icon name="warn" /><div><strong>Some customer histories are thin.</strong><span>Portfolio-wide payment patterns fill the gaps. See assumptions for details.</span></div></div>}
 
         <section className={`headline-card ${projection.shortfall ? 'shortfall' : 'healthy'}`}>
-          <div className="headline-main"><span className="headline-status"><Icon name={projection.shortfall ? 'warn' : 'check'} /> {projection.shortfall ? 'Action recommended' : 'No cash gap found'}</span><h2>{headline}</h2><p>{projection.shortfall ? <>The expected view says your balance crosses the safety line. <strong>{result.fixes.length ? `${result.fixes.length} practical move${result.fixes.length > 1 ? 's' : ''} can cover ${CAD.format(covered)}.` : 'Review the main drivers below.'}</strong></> : <>Your tightest week starts {format(tightest.weekStart, 'MMMM d')}, with {CAD.format(tightest.endBalance)} left.</>}</p></div>
+          <div className="headline-main"><span className="headline-status"><Icon name={projection.shortfall ? 'warn' : 'check'} /> {projection.shortfall ? 'Action recommended' : 'No cash gap found'}</span><h2>{headline}</h2><p>{projection.shortfall ? <>{`The ${scenario} view crosses the safety line. `}<strong>{scenario === 'expected' && result.fixes.length ? `${result.fixes.length} practical move${result.fixes.length > 1 ? 's' : ''} could cover up to ${CAD.format(covered)}.` : 'Review the weekly figures and compare the expected view.'}</strong></> : <>Your tightest week starts {format(tightest.weekStart, 'MMMM d')}, with {CAD.format(tightest.endBalance)} left.</>}</p></div>
           <div className="headline-metrics"><div><span>Projected gap</span><strong>{projection.shortfall ? CAD.format(projection.shortfall.amount) : CAD.format(0)}</strong></div><div><span>Safety line</span><strong>{CAD.format(session.safetyBuffer)}</strong></div><div><span>Forecast confidence</span><strong className="confidence-value">{result.confidence === 'high' ? 'High' : 'Developing'}</strong></div></div>
         </section>
 
@@ -349,7 +349,7 @@ function Radar({ session, scenario, today, onScenario, onReset, onEdit }: { sess
         </section>
 
         <section className="actions-section">
-          <div className="section-heading"><div><span className="eyebrow">Smallest useful moves</span><h2>{result.fixes.length ? 'Ways to close the gap' : 'No fixes needed right now'}</h2><p>{result.fixes.length ? 'Ranked by dollars covered, effort, risk, and confidence.' : 'Keep an eye on the tightest week and revisit when invoices change.'}</p></div>{projection.shortfall && <div className="coverage-stat"><span>Potential coverage</span><strong>{CAD.format(covered)}</strong></div>}</div>
+          <div className="section-heading"><div><span className="eyebrow">Based on the expected scenario</span><h2>{result.fixes.length ? 'Ways to close the gap' : 'No actions for the expected scenario'}</h2><p>{result.fixes.length ? 'Possible moves ranked by cash impact, effort, risk, and confidence.' : 'The expected forecast stays above the safety line; other scenarios may differ.'}</p></div>{result.scenarios.expected.shortfall && result.fixes.length > 0 && <div className="coverage-stat"><span>Potential coverage</span><strong>{CAD.format(covered)}</strong></div>}</div>
           {result.fixes.length > 0 && <div className="fix-grid">{result.fixes.map((fix, index) => <FixCard key={fix.id} fix={fix} index={index} onOpen={() => setSelectedFix(fix)} />)}</div>}
         </section>
 
@@ -363,7 +363,7 @@ function Radar({ session, scenario, today, onScenario, onReset, onEdit }: { sess
         <footer className="radar-footer"><Logo compact /><span>Forecasts are directional decision support, not bookkeeping or financial advice.</span><button onClick={onReset}>Start over</button></footer>
       </div>
 
-      {selectedFix && <div className="modal-backdrop" onMouseDown={() => setSelectedFix(null)}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setSelectedFix(null)} aria-label="Close"><Icon name="close" /></button><span className="modal-icon"><Icon name={invoiceForFix ? 'mail' : 'spark'} /></span><span className="eyebrow">{invoiceForFix ? 'Ready-to-edit draft' : 'Suggested next step'}</span><h2 id="modal-title">{selectedFix.title}</h2>{invoiceForFix ? <><div className="share-disclosure"><Icon name="lock" size={16} /><div><strong>Nothing is shared.</strong><span>This fallback draft was made locally from the invoice details shown here.</span></div></div><div className="draft-meta"><span>{invoiceForFix.invoiceNumber}</span><span>{CAD.format(invoiceForFix.amount)}</span><span>Due {format(invoiceForFix.dueDate, 'MMM d')}</span></div><textarea readOnly value={draftForInvoice(invoiceForFix, today)} /><button className="btn btn-primary btn-wide" onClick={copyDraft}><Icon name={copied ? 'check' : 'copy'} /> {copied ? 'Copied to clipboard' : 'Copy message'}</button></> : <><p className="modal-detail">{selectedFix.detail}</p><div className="impact-panel"><span>Estimated cash impact</span><strong>{CAD.format(selectedFix.impact)}</strong></div>{selectedFix.risk && <div className="notice"><Icon name="warn" /> {selectedFix.risk}</div>}</>}</div></div>}
+      {selectedFix && <div className="modal-backdrop" onMouseDown={() => setSelectedFix(null)}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setSelectedFix(null)} aria-label="Close"><Icon name="close" /></button><span className="modal-icon"><Icon name={invoiceForFix ? 'mail' : 'spark'} /></span><span className="eyebrow">{invoiceForFix ? 'Copyable draft' : 'Suggested next step'}</span><h2 id="modal-title">{selectedFix.title}</h2>{invoiceForFix ? <><div className="share-disclosure"><Icon name="lock" size={16} /><div><strong>Nothing is shared.</strong><span>This draft was made locally from the invoice details shown here.</span></div></div><div className="draft-meta"><span>{invoiceForFix.invoiceNumber}</span><span>{CAD.format(invoiceForFix.amount)}</span><span>Due {format(invoiceForFix.dueDate, 'MMM d')}</span></div><textarea readOnly value={draftForInvoice(invoiceForFix, today, session.businessName)} /><button className="btn btn-primary btn-wide" onClick={copyDraft}><Icon name={copied ? 'check' : 'copy'} /> {copied ? 'Copied to clipboard' : 'Copy message'}</button></> : <><p className="modal-detail">{selectedFix.detail}</p><div className="impact-panel"><span>Estimated cash impact</span><strong>{CAD.format(selectedFix.impact)}</strong></div>{selectedFix.risk && <div className="notice"><Icon name="warn" /> {selectedFix.risk}</div>}</>}</div></div>}
     </main>
   )
 }
@@ -389,14 +389,14 @@ function FixCard({ fix, index, onOpen }: { fix: Fix; index: number; onOpen: () =
 function buildHeadline(result: ForecastResult, scenario: Scenario, buffer: number) {
   const projection = result.scenarios[scenario]
   if (!projection.shortfall) return `You stay above ${CAD.format(buffer)} for the next 13 weeks.`
-  const fixText = result.fixes.filter((fix) => fix.kind === 'chase-invoice').slice(0, 2).map((fix) => fix.title.replace('Nudge ', '')).join(' and ')
+  const fixText = scenario === 'expected' ? result.fixes.filter((fix) => fix.kind === 'chase-invoice').slice(0, 2).map((fix) => fix.title.replace('Nudge ', '')).join(' and ') : ''
   return `You’re short ${CAD.format(projection.shortfall.amount)} in the week of ${format(projection.shortfall.week, 'MMMM d')}.${fixText ? ` ${fixText} can help cover it.` : ''}`
 }
 
-function draftForInvoice(invoice: Invoice, today: Date) {
+function draftForInvoice(invoice: Invoice, today: Date, businessName: string) {
   const overdueDays = Math.max(0, Math.round((today.getTime() - invoice.dueDate.getTime()) / 86_400_000))
   const timing = overdueDays ? `${overdueDays} days past its due date` : `due on ${format(invoice.dueDate, 'MMMM d')}`
-  return `Subject: Quick check on ${invoice.invoiceNumber}\n\nHi ${invoice.customer} team,\n\nI hope you’re well. I’m checking in on invoice ${invoice.invoiceNumber} for ${CAD.format(invoice.amount)}, ${timing}. Could you let me know when we should expect payment? If anything is holding it up, I’m happy to help.\n\nThanks so much,\nMaple & Main`
+  return `Subject: Quick check on ${invoice.invoiceNumber}\n\nHi ${invoice.customer} team,\n\nI hope you’re well. I’m checking in on invoice ${invoice.invoiceNumber} for ${CAD.format(invoice.amount)}, ${timing}. Could you let me know when we should expect payment? If anything is holding it up, I’m happy to help.\n\nThanks so much,\n${businessName}`
 }
 
 export default App
